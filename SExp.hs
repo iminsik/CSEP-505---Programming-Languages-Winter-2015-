@@ -1,10 +1,13 @@
 module SExp (SExp(NumS, IdS, ListS), parseSExp, tokenize, Result(Ok, Err)) where
 
 import Token
+import Data.Maybe
 
 -- Converts a string into a list of tokens.
 tokenize :: String -> [Token]
-tokenize str = error "implement me!!!"
+tokenize "" = []
+tokenize str = [ fst ( fromJust (parseToken str) ) ]
+               ++ (tokenize (snd (fromJust (parseToken str))))
 
 -- S-expression data definition.
 data SExp = NumS Integer -- numeric expression
