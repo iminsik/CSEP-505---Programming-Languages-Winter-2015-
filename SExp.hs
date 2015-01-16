@@ -5,9 +5,12 @@ import Data.Maybe
 
 -- Converts a string into a list of tokens.
 tokenize :: String -> [Token]
-tokenize "" = []
-tokenize str = [ fst ( fromJust (parseToken str) ) ]
-               ++ (tokenize (snd (fromJust (parseToken str))))
+--tokenize "" = []
+  --[ fst ( fromJust (parseToken str) ) ]
+    --           ++ (tokenize (snd (fromJust (parseToken str))))
+tokenize str = case parseToken str of
+  Nothing -> []
+  (Just (tok, strRest)) -> tok : tokenize strRest
 
 -- S-expression data definition.
 data SExp = NumS Integer -- numeric expression
