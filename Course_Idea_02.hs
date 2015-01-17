@@ -1,5 +1,7 @@
 type Var = String
 
+-- Stash Test
+
 (with [x (+ 1 2)]
 	(+ x (with [x (* x x)]
 		(+ x x))))
