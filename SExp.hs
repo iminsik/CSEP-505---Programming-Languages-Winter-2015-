@@ -1,7 +1,6 @@
 module SExp (SExp(NumS, IdS, ListS), parseSExp, tokenize, Result(Ok, Err)) where
 
 import Token
-import Data.Maybe
 
 -- Converts a string into a list of tokens.
 tokenize :: String -> [Token]
@@ -20,8 +19,8 @@ data SExp = NumS Integer -- numeric expression
 
 -- Show SExps in surface syntax.
 instance Show SExp where
-  show (NumS n) = show n
-  show (IdS name) = name
+  show (NumS n) = show  n
+  show (IdS name) = show name
   show (ListS sexps) = "(" ++ (unwords (map show sexps)) ++ ")"
 
 -- Type for results of functions that can fail, such as parsing.
@@ -31,18 +30,46 @@ data Result a = Ok a -- Success
 
 -- Attempts to parse an S-expression from a list of tokens.
 -- If successful, returns:
---    Ok (<parsed S-expression>, <remaining tokens>)
+--    Ok (<parsed S-expression>, <REMAINING tokens>)
 -- If not, returns:
 --    Err <string describing problem encountered>
-parseSExp :: [Token] -> Result (SExp, [Token])
-parseSExp tokens = Err "implement me!"
+parseSExp :: [Token] 
+  -> Result (
+      SExp,   -- CURRENT SEXP
+      [Token] -- REST TOKENS
+  )
+
+parseSExp tokens@(t:ts) =
+  case tokens of 
+    [] -> Err "No Tokens"
+    _  -> 
+      case t of
+        NumTok n -> Ok (NumS n, ts)
+        IdTok s -> Ok (IdS s, ts)
+        Open Round ->
+          case ts of
+            Close Round:ss -> Ok (ListS [], ss)
+            _ ->
+              case parseSExp ts of
+                Ok (sExpsym, tokens) -> 
+                  case tokens of
+                    Close Round:ss -> Ok (ListS [sExpsym], ss)
+                    _ -> Err "Missing Close Round"
+        Close Round -> Err "Missing Open Round"
+
+-- What are passed test
+--((foo))
+--(foo)
+--((1234))
+--((-1234))
+--()
 
 -- Examples that should parse.
 validExamples = [
-  ("empty list", "()", ListS []),
-  ("single id", "true", IdS "true"),
-  ("positive num", "1234", NumS 1234),
-  ("negative num", "-1234", NumS (-1234)),
+  ("empty list", "()", ListS []), -- Done
+  ("single id", "true", IdS "true"), -- Done
+  ("positive num", "1234", NumS 1234), -- Done
+  ("negative num", "-1234", NumS (-1234)), -- Done
   ("mixed list", "(foo () 4 (7 false))",
    ListS [IdS "foo", ListS [], NumS 4, ListS [NumS 7, IdS "false"]])
   ]

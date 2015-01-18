@@ -16,6 +16,15 @@ data Token = Open Brace -- An open brace (of the given shape).
            | IdTok String -- An identifier.
            deriving (Eq, Show)
 
+{-
+-- S-expression data definition.
+data SExp = NumS Integer -- numeric expression
+          | IdS String -- identifier
+          | ListS [SExp] -- list of S-expressions
+          deriving Eq
+
+-}
+
 -- Tries to parse a token from a string.
 -- If the string is empty or contains only a comment, returns Nothing.
 -- Otherwise, returns Just (<token>, <remaining characters>).
