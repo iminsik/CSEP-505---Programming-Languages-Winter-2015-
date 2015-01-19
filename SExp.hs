@@ -15,6 +15,7 @@ tokenize str = case parseToken str of
 data SExp = NumS Integer -- numeric expression
           | IdS String -- identifier
           | ListS [SExp] -- list of S-expressions
+          | Closure
           deriving Eq
 
 -- Show SExps in surface syntax.
@@ -33,29 +34,40 @@ data Result a = Ok a -- Success
 --    Ok (<parsed S-expression>, <REMAINING tokens>)
 -- If not, returns:
 --    Err <string describing problem encountered>
-parseSExp :: [Token] 
-  -> Result (
-      SExp,   -- CURRENT SEXP
-      [Token] -- REST TOKENS
-  )
+-- 
+-- Ok (NumS n1, Ok (NumS n2, ts2))  -> Ok (ListS [n1,n2], ts2]
 
-parseSExp tokens@(t:ts) =
+-- CURRENT SEXP, REST TOKENS
+parseSExp :: [Token] -> Result (SExp, [Token])
+parseSExp tokens =
   case tokens of 
-    [] -> Err "No Tokens"
-    _  -> 
+    [] -> Err "No More Tokens"
+    t:ts -> 
       case t of
-        NumTok n -> Ok (NumS n, ts)
-        IdTok s -> Ok (IdS s, ts)
-        Open Round ->
-          case ts of
-            Close Round:ss -> Ok (ListS [], ss)
-            _ ->
-              case parseSExp ts of
-                Ok (sExpsym, tokens) -> 
-                  case tokens of
-                    Close Round:ss -> Ok (ListS [sExpsym], ss)
-                    _ -> Err "Missing Close Round"
-        Close Round -> Err "Missing Open Round"
+        Open b ->
+          -- call parseListSHelper and return ListS
+          case parseListSHelper ts of
+            (sexp, tokens') -> Ok (sexp, tokens')
+        NumTok n -> Ok (NumS n, [])
+        IdTok s -> Ok (IdS s, [])
+
+parseListSHelper :: [Token] -> (SExp, [Token])
+parseListSHelper tokens = 
+  case tokens of
+    t:ts ->
+      case t of
+        -- If Open b is found , parse it with parseSExpHelper again
+        Open b ->
+          case parseListSHelper ts of
+            (sexp, tokens) -> (ListS [sexp], tokens)
+        -- If Close b is found, return merge Tokens and return ListS
+        Close b -> (ListS [], []) 
+        NumTok t' ->
+          case parseListSHelper ts of 
+            (ListS s', ts') -> (ListS ([NumS t'] ++ s'), ts')
+        IdTok t' ->
+          case parseListSHelper ts of 
+            (ListS s', ts') -> (ListS ([IdS t'] ++ s'), ts')
 
 -- What are passed test
 --((foo))
