@@ -4,24 +4,20 @@ import Token
 
 -- Converts a string into a list of tokens.
 tokenize :: String -> [Token]
---tokenize "" = []
-  --[ fst ( fromJust (parseToken str) ) ]
-    --           ++ (tokenize (snd (fromJust (parseToken str))))
 tokenize str = case parseToken str of
   Nothing -> []
-  (Just (tok, strRest)) -> tok : tokenize strRest
+  Just (tok, str') -> tok : tokenize str'
 
 -- S-expression data definition.
 data SExp = NumS Integer -- numeric expression
           | IdS String -- identifier
           | ListS [SExp] -- list of S-expressions
-          | Closure
           deriving Eq
 
 -- Show SExps in surface syntax.
 instance Show SExp where
-  show (NumS n) = show  n
-  show (IdS name) = show name
+  show (NumS n) = show n
+  show (IdS name) = name
   show (ListS sexps) = "(" ++ (unwords (map show sexps)) ++ ")"
 
 -- Type for results of functions that can fail, such as parsing.
@@ -31,57 +27,41 @@ data Result a = Ok a -- Success
 
 -- Attempts to parse an S-expression from a list of tokens.
 -- If successful, returns:
---    Ok (<parsed S-expression>, <REMAINING tokens>)
+--    Ok (<parsed S-expression>, <remaining tokens>)
 -- If not, returns:
 --    Err <string describing problem encountered>
--- 
--- Ok (NumS n1, Ok (NumS n2, ts2))  -> Ok (ListS [n1,n2], ts2]
-
--- CURRENT SEXP, REST TOKENS
 parseSExp :: [Token] -> Result (SExp, [Token])
-parseSExp tokens =
-  case tokens of 
-    [] -> Err "No More Tokens"
-    t:ts -> 
-      case t of
-        Open b ->
-          -- call parseListSHelper and return ListS
-          case parseListSHelper ts of
-            (sexp, tokens') -> Ok (sexp, tokens')
-        NumTok n -> Ok (NumS n, [])
-        IdTok s -> Ok (IdS s, [])
+-- no tokens = no sexp
+parseSExp [] = Err "empty"
+-- numbers and ids are simple
+parseSExp ((NumTok n):ts) = Ok (NumS n, ts)
+parseSExp ((IdTok s):ts) = Ok (IdS s, ts)
+-- when we find an open brace
+-- try to parse until we find the corresponding close
+parseSExp ((Open b):ts) = toClosed b [] ts
+-- if we find a closing brace before an opening one, error
+parseSExp ((Close b):ts) = Err ("unopened " ++ show b)
 
-parseListSHelper :: [Token] -> (SExp, [Token])
-parseListSHelper tokens = 
-  case tokens of
-    t:ts ->
-      case t of
-        -- If Open b is found , parse it with parseSExpHelper again
-        Open b ->
-          case parseListSHelper ts of
-            (sexp, tokens) -> (ListS [sexp], tokens)
-        -- If Close b is found, return merge Tokens and return ListS
-        Close b -> (ListS [], []) 
-        NumTok t' ->
-          case parseListSHelper ts of 
-            (ListS s', ts') -> (ListS ([NumS t'] ++ s'), ts')
-        IdTok t' ->
-          case parseListSHelper ts of 
-            (ListS s', ts') -> (ListS ([IdS t'] ++ s'), ts')
-
--- What are passed test
---((foo))
---(foo)
---((1234))
---((-1234))
---()
+toClosed :: Brace -> [SExp] -> [Token] -> Result (SExp, [Token])
+-- ran out of tokens = unclosed brace
+toClosed b sexps [] = Err ("no closing " ++ show b)
+-- found the closing brace
+toClosed b sexps ((Close b'):ts)
+  | b == b' = Ok (ListS (reverse sexps), ts)
+-- mismatched braces
+  | b /= b' = Err ("mismatched braces" ++ show b ++ " " ++ show b')
+-- non-brace parsable token goes on the stack
+toClosed b sexps ts = case parseSExp ts of
+  Ok(sexp, ts) -> toClosed b (sexp:sexps) ts
+-- unparsable token = error
+  Err(msg) -> Err msg
 
 -- Examples that should parse.
 validExamples = [
-  ("empty list", "()", ListS []), -- Done
-  ("single id", "true", IdS "true"), -- Done
-  ("positive num", "1234", NumS 1234), -- Done
-  ("negative num", "-1234", NumS (-1234)), -- Done
+  ("empty list", "()", ListS []),
+  ("single id", "true", IdS "true"),
+  ("positive num", "1234", NumS 1234),
+  ("negative num", "-1234", NumS (-1234)),
   ("mixed list", "(foo () 4 (7 false))",
    ListS [IdS "foo", ListS [], NumS 4, ListS [NumS 7, IdS "false"]])
   ]
