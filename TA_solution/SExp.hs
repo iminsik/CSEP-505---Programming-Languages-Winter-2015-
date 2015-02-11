@@ -1,13 +1,12 @@
-module SExp (SExp(..), parseSExp, tokenize) where
+module SExp (SExp(NumS, IdS, ListS), parseSExp, tokenize, Result(Ok, Err)) where
 
-import Result
 import Token
 
 -- Converts a string into a list of tokens.
 tokenize :: String -> [Token]
 tokenize str = case parseToken str of
-                Nothing -> []
-                Just (tok, str') -> tok:tokenize str'
+  Nothing -> []
+  Just (tok, str') -> tok : tokenize str'
 
 -- S-expression data definition.
 data SExp = NumS Integer -- numeric expression
@@ -20,6 +19,11 @@ instance Show SExp where
   show (NumS n) = show n
   show (IdS name) = name
   show (ListS sexps) = "(" ++ (unwords (map show sexps)) ++ ")"
+
+-- Type for results of functions that can fail, such as parsing.
+data Result a = Ok a -- Success
+              | Err String -- Error with description
+              deriving (Eq, Show)
 
 -- Attempts to parse an S-expression from a list of tokens.
 -- If successful, returns:
@@ -51,15 +55,6 @@ toClosed b sexps ts = case parseSExp ts of
   Ok(sexp, ts) -> toClosed b (sexp:sexps) ts
 -- unparsable token = error
   Err(msg) -> Err msg
-
-parseList :: Brace -> [SExp] -> [Token] -> Result ([SExp], [Token])
-parseList br _ [] = Err ("Reached end before close " ++ (show br))
-parseList b sexps ((Close b'):ts)
-  | (b == b') = Ok (reverse sexps, ts)
-  | otherwise = Err "mismatched braces"
-parseList b sexps ts = case parseSExp ts of
-  Ok (sexp, ts') -> parseList b (sexp:sexps) ts'
-  Err msg -> Err msg
 
 -- Examples that should parse.
 validExamples = [
