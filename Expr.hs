@@ -55,22 +55,31 @@ parseExpr (ListS [IdS "fun",ListS arg,expr]) =
       Ok(expr') -> Ok(FunE arg' expr')
       Err(msg)  -> Err msg
     Err(msg)  -> Err msg
-{-
+
+-- parseExpr (ListS [IdS "with*",ListS arg,expr]) =
+
 parseExpr (ListS s) =
-  case s of
-    x:xs -> case parseExpr x of
-      Ok x' -> case parseExpr (ListS xs) of
-        Ok xs' -> Ok (AppE x':xs')
--}
+  case parseExprList s of
+    Ok (s') -> Ok (AppE s')
+    Err (msg) -> Err msg
+
+parseExprList :: [SExp] -> Result [Expr]
+parseExprList li = 
+  case li of 
+    x:xs  -> case parseExpr x of
+      Ok x' -> case parseExprList xs of
+        Ok xs' -> Ok (x':xs')
+        Err (msg) -> Err msg
+      Err (msg) -> Err msg
+    _ -> Ok []
 -- anything else is an error
-parseExpr _ = Err "unrecognized expression"
+-- parseExpr _ = Err "unrecognized expression"
 
 parseVar :: SExp -> Result Var
 parseVarList :: [SExp] -> Result [Var]
 
 parseVar (IdS s) = Ok s
-parseVar (NumS n) = Err "a Bad Var List"
-parseVar (ListS ls) = Err "a Bad Var List"
+parseVar _ = Err "Not an Identifier"
 
 parseVarList s = 
   case s of
