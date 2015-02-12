@@ -27,30 +27,15 @@ instance Show SExp where
 -- If not, returns:
 --    Err <string describing problem encountered>
 parseSExp :: [Token] -> Result (SExp, [Token])
--- no tokens = no sexp
-parseSExp [] = Err "empty"
--- numbers and ids are simple
-parseSExp ((NumTok n):ts) = Ok (NumS n, ts)
-parseSExp ((IdTok s):ts) = Ok (IdS s, ts)
--- when we find an open brace
--- try to parse until we find the corresponding close
-parseSExp ((Open b):ts) = toClosed b [] ts
--- if we find a closing brace before an opening one, error
-parseSExp ((Close b):ts) = Err ("unopened " ++ show b)
+parseSExp [] = Err "SExp cannot be empty"
 
-toClosed :: Brace -> [SExp] -> [Token] -> Result (SExp, [Token])
--- ran out of tokens = unclosed brace
-toClosed b sexps [] = Err ("no closing " ++ show b)
--- found the closing brace
-toClosed b sexps ((Close b'):ts)
-  | b == b' = Ok (ListS (reverse sexps), ts)
--- mismatched braces
-  | b /= b' = Err ("mismatched braces" ++ show b ++ " " ++ show b')
--- non-brace parsable token goes on the stack
-toClosed b sexps ts = case parseSExp ts of
-  Ok(sexp, ts) -> toClosed b (sexp:sexps) ts
--- unparsable token = error
-  Err(msg) -> Err msg
+parseSExp ((NumTok n):ts) = Ok (NumS n, ts)
+parseSExp ((IdTok id):ts) = Ok (IdS id, ts)
+parseSExp ((Close _):_) = Err "close without open"
+parseSExp ((Open brace):ts) =
+  case parseList brace [] ts of
+    Ok (sexps, ts') -> Ok (ListS sexps, ts')
+    Err msg -> Err msg
 
 parseList :: Brace -> [SExp] -> [Token] -> Result ([SExp], [Token])
 parseList br _ [] = Err ("Reached end before close " ++ (show br))
