@@ -56,7 +56,12 @@ parseExpr (ListS [IdS "fun",ListS arg,expr]) =
       Err(msg)  -> Err msg
     Err(msg)  -> Err msg
 
--- parseExpr (ListS [IdS "with*",ListS arg,expr]) =
+parseExpr (ListS [IdS "with*",ListS arg,expr]) =
+  case parseBindVarList arg of
+    Ok(arg')  -> case parseExpr expr of
+      Ok(expr') -> Ok(WithStarE arg' expr')
+      Err(msg)  -> Err msg
+    Err(msg)  -> Err msg
 
 parseExpr (ListS s) =
   case parseExprList s of
@@ -72,8 +77,6 @@ parseExprList li =
         Err (msg) -> Err msg
       Err (msg) -> Err msg
     _ -> Ok []
--- anything else is an error
--- parseExpr _ = Err "unrecognized expression"
 
 parseVar :: SExp -> Result Var
 parseVarList :: [SExp] -> Result [Var]
@@ -91,6 +94,27 @@ parseVarList s =
     _ -> Ok []
 -- parseExprHelper :: SExp -> 
 -- parseExpr sexp = Err "parseExpr not implemented yet"
+
+parseBindVarList :: [SExp] -> Result [(Var, Expr)]
+parseBindVar :: SExp -> Result(Var, Expr)
+
+parseBindVarList li =
+  case li of
+    x:xs -> case parseBindVar x of
+      Ok (x',expr') -> case parseBindVarList xs of
+        Ok ret  -> Ok ((x',expr'):ret)
+        Err (msg) -> Err msg
+      Err (msg) -> Err msg
+    _ -> Ok []
+
+parseBindVar sexp = 
+  case sexp of
+    ListS (x:xs:[])  -> case parseVar x of
+      Ok (x') -> case parseExpr xs of
+        Ok (xs')  -> Ok (x', xs')
+        Err (msg) -> Err msg
+      Err (msg) -> Err msg
+    _ -> Err "Invalid Bind Var"
 
 desugar :: Expr -> Result CExpr
 desugar expr = Err "desugar not implemented yet"
