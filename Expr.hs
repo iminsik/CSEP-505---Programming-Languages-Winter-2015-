@@ -38,6 +38,7 @@ parseExpr :: SExp -> Result Expr
 parseExpr (NumS n)  = Ok(NumE n)
 parseExpr (IdS "true") = Ok(VarE "true")
 parseExpr (IdS "false") = Ok(VarE "false")
+parseExpr (IdS var) = Ok(VarE var)
 -- ifs are 4 element lists
 parseExpr (ListS [IdS "if",cond,con,alt]) =
   case parseExpr cond of
@@ -48,15 +49,20 @@ parseExpr (ListS [IdS "if",cond,con,alt]) =
       Err(msg) -> Err msg
     Err(msg) -> Err msg
 
+{-
 parseExpr (ListS [IdS "fun",arg,expr]) =
   case parseExpr arg of
     Ok(arg')  -> case parseExpr expr of
       Ok(expr') -> Ok(FunE arg' expr')
       Err(msg)  -> Err msg
     Err(msg)  -> Err msg
+-}
 
 -- anything else is an error
 parseExpr _ = Err "unrecognized expression"
+
+parseHelper :: SExp -> Result [Var]
+parseHelper (ListS expr) = Ok [""]
 
 -- parseExprHelper :: SExp -> 
 -- parseExpr sexp = Err "parseExpr not implemented yet"
