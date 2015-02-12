@@ -55,15 +55,13 @@ parseExpr (ListS [IdS "fun",ListS arg,expr]) =
       Ok(expr') -> Ok(FunE arg' expr')
       Err(msg)  -> Err msg
     Err(msg)  -> Err msg
-
 {-
 parseExpr (ListS s) =
   case s of
     x:xs -> case parseExpr x of
       Ok x' -> case parseExpr (ListS xs) of
-        Ok xs' -> Ok AppE [x']:[xs']
+        Ok xs' -> Ok (AppE x':xs')
 -}
-
 -- anything else is an error
 parseExpr _ = Err "unrecognized expression"
 {-
@@ -82,8 +80,11 @@ parseVar (IdS s) = Ok s
 parseVarList s = 
   case s of
     x:xs  -> case parseVar x of
-      Ok x' -> case parseVarList xs of
-        Ok xs'  -> Ok (x':xs')
+      Ok (x') -> case parseVarList xs of
+        Ok (xs')  -> Ok (x':xs')
+        Err (msg) -> Err msg
+      Err (msg) -> Err msg
+    _ -> Ok []
 
 -- parseExprHelper :: SExp -> 
 -- parseExpr sexp = Err "parseExpr not implemented yet"
