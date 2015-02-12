@@ -64,19 +64,14 @@ parseExpr (ListS s) =
 -}
 -- anything else is an error
 parseExpr _ = Err "unrecognized expression"
-{-
-helper :: SExp -> Result [Var]
-helper (ListS listS) = 
-  case listS of 
-    (IdS s):xs  -> case helper (SList xs) of
-      Ok [""]
-    _ -> Err "Bad Vars"
--}
 
 parseVar :: SExp -> Result Var
 parseVarList :: [SExp] -> Result [Var]
 
 parseVar (IdS s) = Ok s
+parseVar (NumS n) = Err "a Bad Var List"
+parseVar (ListS ls) = Err "a Bad Var List"
+
 parseVarList s = 
   case s of
     x:xs  -> case parseVar x of
@@ -85,7 +80,6 @@ parseVarList s =
         Err (msg) -> Err msg
       Err (msg) -> Err msg
     _ -> Ok []
-
 -- parseExprHelper :: SExp -> 
 -- parseExpr sexp = Err "parseExpr not implemented yet"
 
