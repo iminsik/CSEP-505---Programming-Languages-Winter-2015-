@@ -36,9 +36,8 @@ data CExpr = NumC Integer
 
 parseExpr :: SExp -> Result Expr
 parseExpr (NumS n)  = Ok(NumE n)
-parseExpr (IdS "true") = Ok(VarE "true")
-parseExpr (IdS "false") = Ok(VarE "false")
 parseExpr (IdS var) = Ok(VarE var)
+
 -- ifs are 4 element lists
 parseExpr (ListS [IdS "if",cond,con,alt]) =
   case parseExpr cond of
@@ -49,20 +48,42 @@ parseExpr (ListS [IdS "if",cond,con,alt]) =
       Err(msg) -> Err msg
     Err(msg) -> Err msg
 
-{-
-parseExpr (ListS [IdS "fun",arg,expr]) =
-  case parseExpr arg of
+
+parseExpr (ListS [IdS "fun",ListS arg,expr]) =
+  case parseVarList arg of
     Ok(arg')  -> case parseExpr expr of
       Ok(expr') -> Ok(FunE arg' expr')
       Err(msg)  -> Err msg
     Err(msg)  -> Err msg
+
+{-
+parseExpr (ListS s) =
+  case s of
+    x:xs -> case parseExpr x of
+      Ok x' -> case parseExpr (ListS xs) of
+        Ok xs' -> Ok AppE [x']:[xs']
 -}
 
 -- anything else is an error
 parseExpr _ = Err "unrecognized expression"
+{-
+helper :: SExp -> Result [Var]
+helper (ListS listS) = 
+  case listS of 
+    (IdS s):xs  -> case helper (SList xs) of
+      Ok [""]
+    _ -> Err "Bad Vars"
+-}
 
-parseHelper :: SExp -> Result [Var]
-parseHelper (ListS expr) = Ok [""]
+parseVar :: SExp -> Result Var
+parseVarList :: [SExp] -> Result [Var]
+
+parseVar (IdS s) = Ok s
+parseVarList s = 
+  case s of
+    x:xs  -> case parseVar x of
+      Ok x' -> case parseVarList xs of
+        Ok xs'  -> Ok (x':xs')
 
 -- parseExprHelper :: SExp -> 
 -- parseExpr sexp = Err "parseExpr not implemented yet"
