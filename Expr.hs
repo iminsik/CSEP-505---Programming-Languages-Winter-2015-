@@ -135,17 +135,22 @@ desugar (AppE es) =
     (e1:e2:[]) -> case desugar e1 of
       Ok e1' -> case desugar e2 of
         Ok e2' -> Ok (AppC e1' e2')
+        Err (msg) -> Err msg
+      Err (msg) -> Err msg
     (e1:e2:es) -> desugar (AppE ((AppE [e1,e2]):es))
 
 desugar (FunE [x] body) = 
   case desugar body of
     Ok (body') -> Ok (FunC x body')
+    Err (msg) -> Err msg
 desugar (FunE (x:xs) body) = desugar (FunE [x] (FunE xs body))
 
 desugar (WithStarE [(x, e)] body) = 
   case desugar body of 
     Ok (body') -> case desugar e of
       Ok (e') -> Ok (AppC (FunC x body') e')
+      Err (msg) -> Err msg
+    Err (msg) -> Err msg
 desugar (WithStarE ((x, e):xs) body) = desugar (AppE ((FunE [x] (WithStarE xs body)):[e]))
 
 checkIds :: [String] -> [String] -> CExpr -> Result ()
