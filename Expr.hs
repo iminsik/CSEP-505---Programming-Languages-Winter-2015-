@@ -92,8 +92,6 @@ parseVarList s =
         Err (msg) -> Err msg
       Err (msg) -> Err msg
     _ -> Ok []
--- parseExprHelper :: SExp -> 
--- parseExpr sexp = Err "parseExpr not implemented yet"
 
 parseBindVarList :: [SExp] -> Result [(Var, Expr)]
 parseBindVar :: SExp -> Result(Var, Expr)
@@ -121,7 +119,6 @@ desugar :: Expr -> Result CExpr
 desugar (NumE n) = Ok (NumC n)
 desugar (VarE n) = Ok (VarC n)
 
-{-
 desugar (IfE cond con alt) = 
   case desugar cond of
     Ok(cond') -> case desugar con of
@@ -131,38 +128,25 @@ desugar (IfE cond con alt) =
       Err(msg) -> Err msg
     Err(msg) -> Err msg
 
-desugar (AppE expr) =
-  case expr of
-    x:[] -> case desugar x of 
-      Ok (x') -> Ok (x')
-    x:xslist -> case desugar x of 
-      Ok (x') -> case desugar (AppE xslist) of 
-          Ok (xslist') -> Ok (AppC (x') xslist')
-    _ -> Err "No CExpr"
--}
+desugar (AppE es) =
+  case es of
+    [] -> Err "need at least two subexpressions"
+    (e:[]) -> Err "need at least two subexpressions"
+    (e1:e2:[]) -> case desugar e1 of
+      Ok e1' -> case desugar e2 of
+        Ok e2' -> Ok (AppC e1' e2')
+    (e1:e2:es) -> desugar (AppE ((AppE [e1,e2]):es))
 
-desugar (AppE expr) =
-  case expr of
-    x:[] -> case desugar x of 
-      Ok (x') -> Ok (x')
-    x:xs:[] -> case desugar x of 
-      Ok (x') -> case desugar xs of
-        Ok (xs') -> Ok (AppC (x') (xs'))
-    x:xs:xslist -> case desugar x of 
-      Ok (x') -> case desugar xs of
-        Ok (xs') -> case desugar (AppE xslist) of 
-          Ok (xslist') -> Ok (AppC (AppC (x') (xs')) xslist')
-    _ -> Err "No CExpr"
+desugar (FunE [x] body) = 
+  case desugar body of
+    Ok (body') -> Ok (FunC x body')
+desugar (FunE (x:xs) body) = desugar (FunE [x] (FunE xs body))
 
-{-
-parseExpr (FunE arg' expr') =
-  case arg' of
-    x:xs  -> 
-      Ok(expr') -> Ok(FunE arg' expr')
-      Err(msg)  -> Err msg
-    Err(msg)  -> Err msg
--}
--- desugar (WithStarE bindVars expr) = Ok (FunC "x" (NumC 1))
+desugar (WithStarE [(x, e)] body) = 
+  case desugar body of 
+    Ok (body') -> case desugar e of
+      Ok (e') -> Ok (AppC (FunC x body') e')
+desugar (WithStarE ((x, e):xs) body) = desugar (AppE ((FunE [x] (WithStarE xs body)):[e]))
 
 checkIds :: [String] -> [String] -> CExpr -> Result ()
 checkIds bound reserved expr = Err "checkIds not implemented yet"
@@ -171,3 +155,4 @@ parseExprVal :: Result (SExp, [a]) -> Result Expr
 parseExprVal (Ok sexp@(t,ts)) = parseExpr (t)
 desugarVal :: Result Expr -> Result CExpr
 desugarVal (Ok expr) = desugar (expr)
+
