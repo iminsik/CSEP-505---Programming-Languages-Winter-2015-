@@ -115,7 +115,6 @@ parseBindVar sexp =
     _ -> Err "Invalid Bind Var"
 
 desugar :: Expr -> Result CExpr
--- desugar expr = Err "desugar not implemented yet"
 desugar (NumE n) = Ok (NumC n)
 desugar (VarE n) = Ok (VarC n)
 
@@ -156,6 +155,7 @@ desugar (WithStarE ((x, e):xs) body) = desugar (AppE ((FunE [x] (WithStarE xs bo
 checkIds :: [String] -> [String] -> CExpr -> Result ()
 checkIds bound reserved expr = Err "checkIds not implemented yet"
 
+-- Validation Functions
 parseExprVal :: Result (SExp, [a]) -> Result Expr
 parseExprVal (Ok sexp@(t,ts)) = parseExpr (t)
 desugarVal :: Result Expr -> Result CExpr
