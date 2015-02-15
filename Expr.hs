@@ -145,6 +145,7 @@ desugar (FunE [x] body) =
 desugar (FunE (x:xs) body) = 
   desugar (FunE [x] (FunE xs body))
 
+desugar (WithStarE [] body) = desugar body
 desugar (WithStarE [(x, e)] body) = 
   case desugar body of 
     Ok (body') -> case desugar e of
