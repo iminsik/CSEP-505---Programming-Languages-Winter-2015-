@@ -142,7 +142,8 @@ desugar (FunE [x] body) =
   case desugar body of
     Ok (body') -> Ok (FunC x body')
     Err (msg) -> Err msg
-desugar (FunE (x:xs) body) = desugar (FunE [x] (FunE xs body))
+desugar (FunE (x:xs) body) = 
+  desugar (FunE [x] (FunE xs body))
 
 desugar (WithStarE [(x, e)] body) = 
   case desugar body of 
@@ -150,14 +151,32 @@ desugar (WithStarE [(x, e)] body) =
       Ok (e') -> Ok (AppC (FunC x body') e')
       Err (msg) -> Err msg
     Err (msg) -> Err msg
-desugar (WithStarE ((x, e):xs) body) = desugar (AppE ((FunE [x] (WithStarE xs body)):[e]))
+desugar (WithStarE ((x, e):xs) body) = 
+  desugar (AppE ((FunE [x] (WithStarE xs body)):[e]))
 
+-- Reserved Identifer: "if", "fun", "with*"
 checkIds :: [String] -> [String] -> CExpr -> Result ()
-checkIds bound reserved expr = Err "checkIds not implemented yet"
+-- checkIds bound reserved expr = Err "checkIds not implemented yet"
+
+checkIds bound reserved cexpr =
+  case cexpr of 
+    NumC n -> Ok ()
+    VarC x | elem x bound && not (elem x reserved) -> Ok ()
+           | otherwise -> Err ("Unbound `" ++ x ++ "` variable") 
+    FunC bound' cexpr' -> checkIds (bound':bound) reserved cexpr'
+    AppC cexpr1 cexpr2 -> 
+      case cexpr1 of
+        VarC xx -> checkIds bound reserved cexpr2
+        _ -> case checkIds bound reserved cexpr1 of
+          Ok () -> case checkIds bound reserved cexpr2 of
+            Ok () -> Ok ()
+            Err (msg) -> Err msg
+          Err (msg) -> Err msg
 
 -- Validation Functions
 parseExprVal :: Result (SExp, [a]) -> Result Expr
 parseExprVal (Ok sexp@(t,ts)) = parseExpr (t)
 desugarVal :: Result Expr -> Result CExpr
 desugarVal (Ok expr) = desugar (expr)
-
+checkIdsVal :: [String] -> [String] -> Result CExpr -> Result ()
+checkIdsVal bound reserved (Ok cexpr) = checkIds bound reserved cexpr
