@@ -161,8 +161,9 @@ checkIds :: [String] -> [String] -> CExpr -> Result ()
 checkIds bound reserved cexpr =
   case cexpr of 
     NumC n -> Ok ()
-    VarC x | elem x bound && not (elem x reserved) -> Ok ()
-           | otherwise -> Err ("Unbound `" ++ x ++ "` variable") 
+    VarC x  | elem x reserved -> Err ("`" ++ x ++ "` is a reserved keyword.") 
+            | elem x bound -> Ok ()
+            | otherwise -> Err ("Unbound `" ++ x ++ "` variable") 
     FunC bound' cexpr' -> checkIds (bound':bound) reserved cexpr'
     AppC cexpr1 cexpr2 -> 
       case cexpr1 of
