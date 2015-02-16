@@ -1,4 +1,14 @@
-module Expr (Var, Expr(..), CExpr(..), parseExpr, desugar, checkIds) where
+module Expr (
+    Var, 
+    Expr(..), 
+    CExpr(..), 
+    parseExpr, 
+    desugar, 
+    checkIds, 
+    parseExprVal,
+    desugarVal,
+    checkIdsVal    
+    ) where
 
 import Data.List
 import Result

@@ -1,5 +1,6 @@
 module InterpFun where
 
+import SExp
 import Expr
 import Result
 
@@ -18,33 +19,8 @@ instance Show Val where
                              (show env) ++ ")"
   show (PrimV name impl) = "<primitive: " ++ name ++ ">"
 
-{-
-Ok (
-  AppC 
-  (
-    FunC 
-    "x" 
-    (
-      AppC 
-      (
-        FunC 
-        "y" 
-        (
-          AppC 
-          (
-            AppC 
-            (VarC "+") 
-            (VarC "x")
-          ) 
-          (VarC "y")
-        )
-      ) 
-      (NumC 2)
-    )
-  ) 
-  (NumC 1)
-)
--}
+toResult :: Val -> Result Val
+toResult (NumV n) = Ok (NumV n)
 
 wrapBinaryArithOp :: String -> (Integer -> Integer -> Val) -> Val
 wrapBinaryArithOp name op =
@@ -55,6 +31,8 @@ wrapBinaryArithOp name op =
                         (NumV lv, NumV rv) -> return (op lv rv)
                         nonNum -> fail ("numeric op applied to: " ++
                                         (show nonNum)))))
+
+-- (PrimV "+" (PrimV ("partial:+") (op 1 2)))
 
 addVal :: Integer -> Integer -> Val
 addVal arg1 arg2 = NumV ((+) arg1 arg2)
@@ -72,7 +50,8 @@ initialEnv = [("true", BoolV True),
               ("+", (wrapBinaryArithOp "+" addVal)),
               ("*", (wrapBinaryArithOp "*" multiVal)),
               ("=", (wrapBinaryArithOp "=" equalVal)),
-              ("<", (wrapBinaryArithOp "<" ltVal))]
+              ("<", (wrapBinaryArithOp "<" ltVal))
+              ]
 
 lookupBoundVar :: Var -> Env -> Result Val
 lookupBoundVar var env =
@@ -80,7 +59,6 @@ lookupBoundVar var env =
       Just a -> Ok a
       Nothing -> Err "Variable is not bound."
 
-interp :: CExpr -> Env -> Result Val
 ---- interp expr env = Err "'interp' not yet implemented"
 -- numbers and booleans eval to themselves
 {-
@@ -97,31 +75,24 @@ interp (FunC var body) initialEnv = Err "Not implemented"
 -}
 
 -- interp (FunC var body) env = 
+interp :: CExpr -> Env -> Result Val
 interp (NumC n) env = Ok (NumV n)
 interp (VarC v) env = 
   case lookupBoundVar v env of
     Ok (a) -> Ok (a)
 interp (AppC f a) env =
   case interp f env of
-    Ok val' -> case val' of
-      PrimV name impl -> case interp a env of
-        Ok val'' -> Ok (impl val'')
--- we need to evaluate the arguments for a binop and make sure they're numbers
-{-
-interp (BinOpE op arg1 arg2) =
-  case interp arg1 of
-    Ok(NumV n1) -> case interp arg2 of
-      Ok(NumV n2) -> case op of
-        -- now we need to find out what operation we're doing
-        Add -> Ok (NumV (n1 + n2))
-        Mult -> Ok (NumV (n1 * n2))
-        Equal -> Ok (BoolV (n1 == n2))
-        Lt -> Ok (BoolV (n1 < n2))
-      Ok(_) -> Err (show arg2 ++ " is not a number")
-      Err(msg) -> Err msg
-    Ok(_) -> Err (show arg1 ++ " is not a number")
-    Err(msg) -> Err msg
--}
+    Ok (PrimV var op) -> Err "Primitive msg"
+      --case interp a env of 
+      --  Ok (NumV n) -> Ok (NumV (op (NumV n) (NumV 1)))
+    Err (msg) -> Err msg
+    --Ok val' -> case val' of
+    --  PrimV name impl -> case interp a env of
+    --    Ok (NumV val'') -> Ok (impl val'')
+-- interpVal(desugarVal(parseExprVal(parseSExp (tokenize "(+ 1 2)")))) initialEnv
+-- desugarVal(parseExprVal(parseSExp (tokenize "(+ 1 2)")))
+-- Ok (AppC (AppC (VarC "+") (NumC 1)) (NumC 2))
+
 -- we need to evaluate just the condition first
 interp (IfC cond con alt) env =
   case interp cond env of
@@ -132,3 +103,9 @@ interp (IfC cond con alt) env =
     Ok(_) -> Err (show cond ++ " is not a boolean")
     Err(msg) -> Err msg
 
+interpVal :: Result CExpr -> Env -> Val
+interpVal (Ok cexpr) env = case interp cexpr env of
+  Ok val -> val
+
+interpPrint :: Result Val -> Val
+interpPrint (Ok val) = val
