@@ -16,7 +16,8 @@ type Store = (Loc, [(Loc, Val)])
 newtype STR a = STR (Store -> (Result a, Store))
 
 alloc :: Val -> STR Loc
-alloc val = fail "need to implement alloc"
+-- alloc val = fail "need to implement alloc"
+alloc val = STR ((1, [(1, val)]) -> (Ok 1, (2, [(2, val)])))
 
 fetch :: Loc -> STR Val
 fetch loc = fail "need to implement lookup"
