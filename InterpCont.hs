@@ -105,12 +105,14 @@ callK (IfK cons alt env k) val =
 
 callK (AppFunK arg env k) fv =
   interp arg env (AppArgK fv k)
-callK (AppArgK fv k) av =
+callK (AppArgK fv k) av = apply fv av k
+  {-
   case fv of
     FunV var body closEnv -> 
       interp body ((var, av):closEnv) k
     PrimV fn op -> op av k
     nonFun -> Err ("Non-Function: " ++ (show nonFun))
+  -}
 
 parseCheckAndInterpStr :: String -> Result Val
 parseCheckAndInterpStr str =
@@ -123,4 +125,10 @@ parseCheckAndInterpStr str =
      interp cexp initialEnv DoneK
 
 apply :: Val -> Val -> Cont -> Result Val
-apply fv val k = Err "apply unimplemented"
+apply fv val k =
+  case fv of
+    FunV var body closEnv -> 
+      interp body ((var, val):closEnv) k
+    PrimV fn op -> op val k
+    nonFun -> Err ("Non-Function: " ++ (show nonFun))
+
