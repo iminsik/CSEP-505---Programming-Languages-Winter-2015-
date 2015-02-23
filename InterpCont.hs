@@ -29,7 +29,8 @@ instance Show Val where
 
 data Cont = DoneK
           | IfK CExpr CExpr Env Cont
-            -- Fill in other variants here.
+          | AppFunK CExpr Env Cont
+          | AppArgK Val Cont
           deriving Show
 
 handleError :: Cont -> Val -> Result Val
@@ -92,17 +93,24 @@ interp expr env k =
       Nothing -> Err ("unbound id: " ++ v)
       Just val -> callK k val
    IfC cond cons alt -> interp cond env (IfK cons alt env k)
-   AppC fun arg -> Err "interp AppC unimplemented"
+   AppC fun arg -> interp fun env (AppFunK arg env k)
 
 callK :: Cont -> Val -> Result Val
-callK k val =
-  case k of
-   DoneK -> Ok val
-   IfK cons alt env k ->
+callK DoneK val = Ok val
+callK (IfK cons alt env k) val =
      case val of
       BoolV True -> interp cons env k
       BoolV False -> interp alt env k
       nonBool -> Err ("`if` expected bool, got: " ++ (show nonBool))
+
+callK (AppFunK arg env k) fv =
+  interp arg env (AppArgK fv k)
+callK (AppArgK fv k) av =
+  case fv of
+    FunV var body closEnv -> 
+      interp body ((var, av):closEnv) k
+    PrimV fn op -> op av k
+    nonFun -> Err ("Non-Function: " ++ (show nonFun))
 
 parseCheckAndInterpStr :: String -> Result Val
 parseCheckAndInterpStr str =
