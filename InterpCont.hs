@@ -57,8 +57,8 @@ cons = PrimV "cons" (
     \arg1 k -> callK k (PrimV ("partial: cons")
                         (\arg2 k ->
                           case (arg1, arg2) of
-                           (lv, ConsV val1 val2) -> Ok (ConsV lv (ConsV val1 val2))
-                           (lv, EmptyV) -> Ok (ConsV lv EmptyV)
+                           (lv, ConsV val1 val2) -> callK k (ConsV lv (ConsV val1 val2))
+                           (lv, EmptyV) -> callK k (ConsV lv EmptyV)
                            nonList -> handleError k (StringV ("cons" ++ " applied to: " ++
                                                              (show nonList))))))
 
@@ -76,8 +76,21 @@ emptyP = PrimV "empty?" (
         nonEmpty -> Ok (BoolV False)
     )
 
-first = unimplemented "first" 
-rest = unimplemented "rest" 
+first = PrimV "first" (
+    \arg1 k ->
+      case arg1 of
+        (ConsV val1 val2) -> Ok val1
+        nonConsV -> handleError k (StringV ("first" ++ " applied to: " ++
+                                                             (show nonConsV)))
+  )
+
+rest = PrimV "rest" (
+    \arg1 k ->
+      case arg1 of
+        (ConsV val1 val2) -> Ok val2
+        nonConsV -> handleError k (StringV ("rest" ++ " applied to: " ++
+                                                             (show nonConsV)))
+  )
 
 pair = unimplemented "pair" 
 pairFst = unimplemented "fst" 
@@ -114,6 +127,9 @@ interp expr env k =
       Just val -> callK k val
    IfC cond cons alt -> interp cond env (IfK cons alt env k)
    AppC fun arg -> interp fun env (AppFunK arg env k)
+
+interpVal :: Result CExpr -> Env -> Cont -> Result Val
+interpVal (Ok cexpr) env k = interp cexpr env k
 
 callK :: Cont -> Val -> Result Val
 callK DoneK val = Ok val

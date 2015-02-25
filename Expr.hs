@@ -1,4 +1,14 @@
-module Expr (Var, Expr(..), CExpr(..), parseExpr, desugar, checkIds) where
+module Expr (
+  Var, 
+  Expr(..), 
+  CExpr(..), 
+  parseExpr, 
+  desugar, 
+  checkIds,
+  parseExprVal, 
+  desugarVal, 
+  checkIdsVal
+  ) where
 
 import Data.List
 import Result
@@ -122,3 +132,11 @@ checkIds bound reserved expr =
    AppC fun arg ->
      do recur fun
         recur arg
+
+-- Validation Functions
+parseExprVal :: Result (SExp, [a]) -> Result Expr
+parseExprVal (Ok sexp@(t,ts)) = parseExpr (t)
+desugarVal :: Result Expr -> Result CExpr
+desugarVal (Ok expr) = desugar (expr)
+checkIdsVal :: [String] -> [String] -> Result CExpr -> Result ()
+checkIdsVal bound reserved (Ok cexpr) = checkIds bound reserved cexpr

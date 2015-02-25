@@ -96,3 +96,7 @@ interp (IfE cond con alt) =
     -- or find a type error
     Ok(_) -> Err (show cond ++ " is not a boolean")
     Err(msg) -> Err msg
+
+interpVal :: Result CExpr -> Env -> Val
+interpVal (Ok cexpr) env = case interp cexpr env of
+  Ok val -> val
