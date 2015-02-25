@@ -53,9 +53,29 @@ less = wrapBinaryArithOp "<" (\x y -> (BoolV (x < y)))
 
 unimplemented name = PrimV name (\v k -> Err (name ++ ": unimplemented"))
 
-cons = unimplemented "cons"
-consP = unimplemented "cons?"
-emptyP = unimplemented "empty?"
+cons = PrimV "cons" (
+    \arg1 k -> callK k (PrimV ("partial: cons")
+                        (\arg2 k ->
+                          case (arg1, arg2) of
+                           (lv, ConsV val1 val2) -> Ok (ConsV lv (ConsV val1 val2))
+                           (lv, EmptyV) -> Ok (ConsV lv EmptyV)
+                           nonList -> handleError k (StringV ("cons" ++ " applied to: " ++
+                                                             (show nonList))))))
+
+consP = PrimV "cons?" (
+    \arg1 k -> 
+      case arg1 of
+        ConsV val1 val2-> Ok (BoolV True)
+        nonConsV -> Ok (BoolV False)
+    )
+
+emptyP = PrimV "empty?" (
+    \arg1 k -> 
+      case arg1 of
+        EmptyV -> Ok (BoolV True)
+        nonEmpty -> Ok (BoolV False)
+    )
+
 first = unimplemented "first" 
 rest = unimplemented "rest" 
 
