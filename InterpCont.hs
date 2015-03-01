@@ -62,6 +62,17 @@ cons = PrimV "cons" (
                            nonList -> handleError k (StringV ("cons" ++ " applied to: " ++
                                                              (show nonList))))))
 
+callWithHandler = PrimV "call-with-handler" (
+    \thunk k -> callK k (PrimV "Partial: call-with-handler"
+      (\handler k -> 
+        case thunk of 
+          (FunV var cexpr env) -> 
+            case interp cexpr env k of
+              Err msg -> case handler of 
+                (FunV var' cexpr' env') -> interp cexpr' ((var',(StringV msg)):env') k-- callK k handler
+              Ok success -> Ok success
+          nonFunV -> callK k thunk)))
+
 consP = PrimV "cons?" (
     \arg1 k -> 
       case arg1 of
@@ -92,12 +103,31 @@ rest = PrimV "rest" (
                                                              (show nonConsV)))
   )
 
-pair = unimplemented "pair" 
-pairFst = unimplemented "fst" 
-pairSnd = unimplemented "snd" 
+pair = PrimV "pair" (
+    \arg1 k -> callK k (PrimV ("partial: pair")
+                        (\arg2 k -> callK k (PairV arg1 arg2)))
+  )
 
-raise = unimplemented "raise" 
-callWithHandler = unimplemented "call-with-handler"
+pairFst = PrimV "pairFst" (
+    \arg1 k ->
+      case arg1 of
+        (PairV val1 val2) -> Ok val1
+        nonPairV -> handleError k (StringV ("pairFst" ++ " applied to: " ++
+                                                             (show nonPairV)))
+  )
+
+pairSnd = PrimV "pairSnd" (
+    \arg1 k ->
+      case arg1 of
+        (PairV val1 val2) -> Ok val2
+        nonPairV -> handleError k (StringV ("pairSnd" ++ " applied to: " ++
+                                                             (show nonPairV)))
+  )
+
+raise = PrimV "raise" (
+    \arg1 k -> handleError k (StringV (show arg1))
+  )
+
 callWithContext = unimplemented "call-with-context"
 getContext = unimplemented "get-context"
 callCc = unimplemented "call/cc"
@@ -142,13 +172,14 @@ callK (IfK cons alt env k) val =
 callK (AppFunK arg env k) fv =
   interp arg env (AppArgK fv k)
 callK (AppArgK fv k) av = apply fv av k
-  {-
+
+apply :: Val -> Val -> Cont -> Result Val
+apply fv val k =
   case fv of
     FunV var body closEnv -> 
-      interp body ((var, av):closEnv) k
-    PrimV fn op -> op av k
+      interp body ((var, val):closEnv) k
+    PrimV fn op -> op val k
     nonFun -> Err ("Non-Function: " ++ (show nonFun))
-  -}
 
 parseCheckAndInterpStr :: String -> Result Val
 parseCheckAndInterpStr str =
@@ -159,12 +190,3 @@ parseCheckAndInterpStr str =
      cexp <- desugar expr
      checkIds initialIds (["fun", "if", "with*"] ++ initialIds) cexp
      interp cexp initialEnv DoneK
-
-apply :: Val -> Val -> Cont -> Result Val
-apply fv val k =
-  case fv of
-    FunV var body closEnv -> 
-      interp body ((var, val):closEnv) k
-    PrimV fn op -> op val k
-    nonFun -> Err ("Non-Function: " ++ (show nonFun))
-
