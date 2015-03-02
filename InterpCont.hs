@@ -16,6 +16,7 @@ data Val = NumV Integer -- a numeric constant
          | PrimV String (Val -> Cont -> Result Val)  -- primitive: name and implementation
 
 type Env = [(Var, Val)]
+type Ctx = [Var]
 
 instance Show Val where
   show (NumV n) = show n
@@ -31,6 +32,7 @@ data Cont = DoneK
           | IfK CExpr CExpr Env Cont
           | AppFunK CExpr Env Cont
           | AppArgK Val Cont
+          | Ctx Cont
           deriving Show
 
 handleError :: Cont -> Val -> Result Val
@@ -62,6 +64,10 @@ cons = PrimV "cons" (
                            nonList -> handleError k (StringV ("cons" ++ " applied to: " ++
                                                              (show nonList))))))
 
+raise = PrimV "raise" (
+    \arg1 k -> handleError k (StringV (show arg1))
+  )
+
 callWithHandler = PrimV "call-with-handler" (
     \thunk k -> callK k (PrimV "Partial: call-with-handler"
       (\handler k -> 
@@ -72,6 +78,26 @@ callWithHandler = PrimV "call-with-handler" (
                 (FunV var' cexpr' env') -> interp cexpr' ((var',(StringV msg)):env') k-- callK k handler
               Ok success -> Ok success
           nonFunV -> callK k thunk)))
+
+callWithContext = unimplemented "callWithContext"
+{-
+callWithContext = PrimV "call-with-context" (
+    \ctx k -> callK k (PrimV "Partial: call-with-context"
+        (\thunk k -> 
+            Ok (StringV "test")
+        )
+      )
+  )
+-}
+
+getContext = unimplemented "getContext"
+{-
+getContext = PrimV "getContext" (
+    \param k -> Ok initialCtx
+  )
+-}
+
+callCc = unimplemented "call/cc"
 
 consP = PrimV "cons?" (
     \arg1 k -> 
@@ -124,14 +150,6 @@ pairSnd = PrimV "pairSnd" (
                                                              (show nonPairV)))
   )
 
-raise = PrimV "raise" (
-    \arg1 k -> handleError k (StringV (show arg1))
-  )
-
-callWithContext = unimplemented "call-with-context"
-getContext = unimplemented "get-context"
-callCc = unimplemented "call/cc"
-
 bind prim@(PrimV name fn) = (name, prim)
 bind nonPrim = error ("cannot bind " ++ (show nonPrim))
 
@@ -144,6 +162,9 @@ initialEnv = [
   (map bind [add, mult, equal, less, emptyP, first, rest, cons,
              consP, pair, pairFst, pairSnd, callCc, callWithContext,
              getContext, callWithHandler, raise])
+
+initialCtx :: Ctx
+initialCtx = []
 
 interp :: CExpr -> Env -> Cont -> Result Val
 interp expr env k =
