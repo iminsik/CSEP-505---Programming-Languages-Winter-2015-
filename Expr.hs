@@ -28,7 +28,38 @@ data Type = NumT
 -- renaming of type variables.
 -- Problem 1.
 alphaEquiv :: Type -> Type -> [(TVar, TVar)] -> Bool
-alphaEquiv type1 type2 typeVariableMap = False -- implement me!
+alphaEquiv type1 type2 typeVariableMap = -- False -- implement me!
+  case (type1, type2) of
+    (NumT, NumT) -> True
+    (BoolT, BoolT) -> True
+    (StringT, StringT) -> True
+    ((ListT type1'), (ListT type2')) ->
+      alphaEquiv type1 type2 typeVariableMap
+    ((ForAllT tvar1 type1), (ForAllT tvar2 type2)) ->
+      alphaEquiv type1 type2 ((tvar1, tvar2):typeVariableMap)
+    ((PairT p1 p2), (PairT p1' p2')) ->
+      (alphaEquiv p1 p1' typeVariableMap) && (alphaEquiv p2 p2' typeVariableMap)
+    ((VarT tvar1'), (VarT tvar1'')) ->
+      if (alphaCheckScope tvar1' tvar1'' typeVariableMap) == True && (tvar1' == tvar1'') then True
+      else
+        if (alphaCheckScope tvar1' tvar1'' typeVariableMap) == True && elem (tvar1', tvar1'') typeVariableMap then 
+          True
+        else
+          False
+    ((ArrowT a b), (ArrowT a' b')) ->
+      (alphaEquiv a a' typeVariableMap) && (alphaEquiv b b' typeVariableMap)
+    _ -> False
+
+alphaCheckScope :: TVar -> TVar -> [(TVar, TVar)] -> Bool
+alphaCheckScope tvar1 tvar2 typeVariableMap =
+    case typeVariableMap of 
+      [] -> True
+      _ -> case head typeVariableMap of 
+        (tvar1', tvar2') -> 
+          if ((tvar1 == tvar1') == True) && ((tvar2 == tvar2') == False) then False
+          else 
+            if (((tvar2 == tvar2') == True) && (tvar1 == tvar1') == False) then False
+            else alphaCheckScope tvar1 tvar2 (tail typeVariableMap)
 
 instance Eq Type where
   t1 == t2 = alphaEquiv t1 t2 []

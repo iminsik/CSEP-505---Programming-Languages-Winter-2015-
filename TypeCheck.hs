@@ -14,11 +14,47 @@ type TyContext = ([TVar], [(TVar, Type)])
 
 -- Problem 2.
 freeTypeVars :: Type -> [TVar] -> [TVar]
-freeTypeVars ty bound = [] -- implement me!
+freeTypeVars ty bound = -- [] -- implement me!
+  case ty of 
+    BoolT -> []
+    NumT -> []
+    StringT -> []
+    VarT a -> 
+      case bound of 
+        [] -> [a]
+        _ ->
+          if (elem a bound) then []
+          else [a]
+    ListT a1' -> 
+      (freeTypeVars a1' bound)
+    ArrowT a1 a2 ->
+      (freeTypeVars a1 bound) ++ (freeTypeVars a2 bound) 
+    PairT p1 p2 ->
+      (freeTypeVars p1 bound) ++ (freeTypeVars p2 bound) 
+    ForAllT tvar1 type1 ->
+      freeTypeVars type1 (tvar1:bound)
 
 -- Problem 3.
 alphaRename :: TVar -> TVar -> Type -> Type
-alphaRename vIn vOut ty = ty -- implement me!
+alphaRename vIn vOut ty = -- ty -- implement me!
+  case ty of 
+    BoolT -> BoolT
+    NumT -> NumT
+    StringT -> StringT
+    VarT a -> if a == vIn then (VarT vOut)
+              else (VarT a)
+    ListT a1 ->
+      (ListT (alphaRename vIn vOut a1))
+    ArrowT a1 a2 ->
+      (ArrowT (alphaRename vIn vOut a1) (alphaRename vIn vOut a2))
+    PairT p1 p2 ->
+      (PairT (alphaRename vIn vOut p1) (alphaRename vIn vOut p2))
+    ForAllT tvar1 type1 ->
+      if tvar1 == vIn then 
+        (ForAllT vOut (alphaRename vIn vOut type1))
+      else
+        (ForAllT tvar1 (alphaRename vIn vOut type1))
+
 
 -- Implementation complete: nothing to do here. Use this helper in checkType.
 checkClosed :: Type -> [TVar] -> Result ()
@@ -28,8 +64,40 @@ checkClosed ty bound =
    nonEmpty -> Err ("unbound type var(s) in " ++ (show ty) ++ ": " ++ (show nonEmpty))
 
 -- Problem 4.
+-- freeTypeVars ty []
+-- genFreshVar (allTypeVars type')
+-- alphaRename x (genFreshVar (allTypeVars ty)) ty
 subst :: TVar -> Type -> Type -> Type
-subst var forType inType = inType -- implement me!
+subst var forType inType = -- inType -- implement me!
+  case inType of 
+    BoolT -> BoolT
+    NumT -> NumT
+    StringT -> StringT
+    VarT vart ->
+      if vart == var then forType
+      else (VarT vart)
+    ListT vart ->
+      (ListT (subst var forType vart))
+    ArrowT vart1 vart2 ->
+      (ArrowT (subst var forType vart1) (subst var forType vart2))
+    PairT vart1 vart2 ->
+      (PairT (subst var forType vart1) (subst var forType vart2))
+    ForAllT vart1 type1 ->
+      if elem var (freeTypeVars (ForAllT vart1 type1) []) then
+        case freeTypeVars forType [] of 
+          [] -> (ForAllT vart1 (subst var forType type1))
+          e:es -> 
+            if elem e (allTypeVars (ForAllT vart1 type1)) then  
+                (ForAllT 
+                  (genFreshVar (allTypeVars (ForAllT vart1 type1)))
+                  (subst var forType
+                    (alphaRename e (genFreshVar (allTypeVars (ForAllT vart1 type1))) type1))
+                  )
+            else 
+              (ForAllT vart1 (subst var forType type1))
+
+      else
+        (ForAllT vart1 type1)
 
 -- Problem 5.
 checkType :: DExpr -> TyContext -> Result Type
