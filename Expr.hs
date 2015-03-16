@@ -1,4 +1,4 @@
-module Expr (Var, Expr(..), CExpr(..), DExpr(..), Type(..), TVar, parseExpr, desugar) where
+module Expr (Var, Expr(..), CExpr(..), DExpr(..), Type(..), TVar, parseExpr, parseExprVal, desugar, desugarVal) where
 
 import Data.List
 import Result
@@ -159,6 +159,11 @@ parseTypeParamList (t:ts) =
      tys <- parseTypeParamList ts
      return (ty:tys)
 
+parseExprVal :: SExp -> Expr
+parseExprVal sexp =
+  case parseExpr sexp of
+    Ok expr -> expr
+
 parseExpr :: SExp -> Result Expr
 parseExpr (NumS n) = return (NumE n)
 parseExpr (IdS id) = return (VarE id)
@@ -205,6 +210,11 @@ parseBinding (ListS [IdS var, bound]) =
   do bound' <- parseExpr bound
      return (var, bound')
 parseBinding bad = fail ("expected var-expr binding, got: " ++ (show bad))
+
+desugarVal :: Expr -> DExpr
+desugarVal expr =
+  case desugar expr of 
+    Ok dexpr -> dexpr
 
 desugar :: Expr -> Result DExpr
 desugar (NumE n) = return (NumD n)

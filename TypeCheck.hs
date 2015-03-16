@@ -7,11 +7,6 @@ import Result
 import SExp -- used only by parseAndCheckStr
 import Token -- used only by parseAndCheckStr
 
--- A typing context includes a set of polymorphic type variables that
--- are in scope, along with bindings of program variables to their
--- declared types.
-type TyContext = ([TVar], [(TVar, Type)])
-
 -- Problem 2.
 freeTypeVars :: Type -> [TVar] -> [TVar]
 freeTypeVars ty bound = -- [] -- implement me!
@@ -99,9 +94,28 @@ subst var forType inType = -- inType -- implement me!
       else
         (ForAllT vart1 type1)
 
+-- A typing context includes a set of polymorphic type variables that
+-- are in scope, along with bindings of program variables to their
+-- declared types.
+type TyContext = ([TVar], [(TVar, Type)])
+
 -- Problem 5.
 checkType :: DExpr -> TyContext -> Result Type
-checkType expr gamma = Err "implement me!"
+checkType expr gamma = -- Err "implement me!"
+  case expr of
+    VarD "+" -> Ok (NumT) 
+    VarD "-" -> Ok (NumT) 
+    VarD "*" -> Ok (NumT) 
+    VarD "=" -> Ok (BoolT) 
+    NumD num -> Ok (NumT)
+    AppD fun arg ->
+      case checkType fun gamma of
+        Ok ty2 -> Ok ty2
+    FunD var ty fun' ->
+      case gamma of 
+        ([], []) -> 
+          case (checkType fun' gamma) of
+            Ok ty1 -> Ok (ArrowT ty ty1)
 
 -- Implementation complete.
 -- Generates a variable name that's distinct from every name in the argument list.

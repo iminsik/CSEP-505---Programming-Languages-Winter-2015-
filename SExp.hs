@@ -1,4 +1,4 @@
-module SExp (SExp(..), parseSExp, tokenize) where
+module SExp (SExp(..), parseSExp, parseSExpVal, tokenize) where
 
 import Result
 import Token
@@ -28,6 +28,11 @@ instance Show SExp where
 --    Ok (<parsed S-expression>, <remaining tokens>)
 -- If not, returns:
 --    Err <string describing problem encountered>
+parseSExpVal :: [Token] -> SExp
+parseSExpVal token =
+  case parseSExp token of
+    Ok (sexp, token) -> sexp
+
 parseSExp :: [Token] -> Result (SExp, [Token])
 parseSExp [] = Err "SExp cannot be empty"
 
