@@ -1,0 +1,18 @@
+Exam question:
+
+Choose between two and four topics from the list below and explain in your own words what they are and why they are interesting or significant, providing examples as needed. Your total submission should be roughly between 600 and 800 words.
+store-passing style
+monads
+continuations and continuation-passing style
+abstract syntax and parsing
+desugaring and macros
+lexical (static scope) and capture-avoiding substitution
+representing data as functions (e.g., Church encodings for booleans, numbers, lists)
+self-application (Y-combinator) and other techniques for implementing recursion
+environments and closures
+operational semantics (big-step and small-step)
+static types and the simply-typed lambda-calculus
+explicit parametric polymorphism (System F)
+unification and Hindley-Milner type inference
+subtyping
+Curry-Howard correspondence
