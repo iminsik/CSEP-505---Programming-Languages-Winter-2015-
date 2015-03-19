@@ -1,0 +1,30 @@
+{-
+Purpose Homework #5
+Author  Insik Cho
+Date    2015-03-18
+Description
+	I pick and describe 4 topics:
+	- Continuation and Continuation Passing Style
+	- Environments and Closures
+	- Store Passing Style
+	- Self-Application (Y-combinator) and other techniques for implementing recursion
+-}
+
+1. Continuation and Continuation Passing Style
+
+Continuation passing style is a quite interesting topic for me, though I am struggling in implementing it in Haskell. Continuation passing style makes it possible to capture a computation, a state of the call stack as it were, and resume that same state at a later time. With this concept, various form of exception handling and C-like ‘long pointer jump’ tricks can be implemented. Continuation passing style works in heap, not in stack, since callee doesn’t return back to caller.
+The continuation can be implemented on top of ‘currying’ concept; functions are values in theory, and we can manipulate function values. ‘Currying’ allows us to produce a new function by combining a function and an argument. The curry method works by creating a closure that holds that original function and the arguments to curry; it returns a function that, when invoked, returns the result of calling that original function, passing it all of the arguments from the invocation of ‘curry’ and the current invocation. 
+We can use de-sugaring in two different ways. One, we have used it to ‘shrink’ the language. In transforming our surface expression to core expression, so-called de-sugaring is important, since the ‘curry’ works based on the de-sugared syntax to take a large language and distill it down to its core syntax; we, however, have also used it to grow the language to take an existing language and add new features to it. In several times in our class, we have exercised de-sugaring ‘surface expression’ to ‘core expression’ so that we have ‘continuation’ possible in ‘curried’ form.  Another way to transform or re-write expressions is often called a ‘macro’. Traditionally this form of de-sugaring is called ‘macro expansion’, though this term misleads because the output of de-sugaring can be smaller than the input, as we exercised.
+
+2. Environments and Closures
+
+A closure is an instance of a function, a value, whose non-local variables have been bound either to values or to storage location in environment. The environment can be defined as ‘a set of all bindings of variables in the scope’, and that is also what closures have to capture. In imperative languages, any operation on the variables are performed on the same relative memory location – this is often called capturing the variable ‘by reference’.
+
+3. Store Passing Style
+
+Store passing style is similar to continuation passing style in that each expression needs access to a ‘store’. We would like to add a pair of operators, ‘reference’ and ‘de-reference’ of variables in a language. When we implement a state in purely functional mechanisms, we can represent them explicitly via ‘store’, a mutable storage, which is passed in to each function, and returned as part of its result. The store is a map that lets us look up values of things. The basic idea is basically like implementing a kind of map; it associates keys with pairs of allocated memory and value.
+
+4. Self-Application (Y-combinator) and other techniques for implementing recursion
+
+A Y-combinator is a "functional" (a function that operates on other functions) that enables recursion, when you can't refer to the function from within itself. In computer-science theory, it generalizes recursion, abstracting its implementation, and thereby separating it from the actual work of the function in question. The benefit of not needing a compile-time name for the recursive function is sort of a bonus.
+This is applicable in languages that support lambda functions. The expression-based nature of lambdas usually means that they cannot refer to themselves by name. And working around this by way of declaring the variable, refering to it, then assigning the lambda to it, to complete the self-reference loop, is frail. The lambda variable can be copied, and the original variable re-assigned, which breaks the self-reference.
